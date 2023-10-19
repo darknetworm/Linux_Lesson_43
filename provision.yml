@@ -1,0 +1,159 @@
+---
+#Общие задачи
+  - name: General setup
+    hosts: all
+    become: true
+    tasks:
+#Установка пакетов
+      - name: Install packages      
+        apt:
+          name: 
+          - debsums
+          - python3-pip
+          - pkg-config
+          - python3-dev
+          - default-libmysqlclient-dev
+          - python3-virtualenv
+          - gnupg2
+          - lsb-release
+          update_cache: yes
+          state: latest
+#Установка клиента mysql
+      - name: Install mysqlclient
+        pip:
+          name: mysqlclient
+#Скачивание пакета установки сервера Percona
+      - name: Download the percona-release repository package
+        command: curl -O https://repo.percona.com/apt/percona-release_latest.generic_all.deb
+#Установка пакета сервера Percona
+      - name: Install percona-release package
+        apt:
+          deb: percona-release_latest.generic_all.deb
+#Подключение репозитория для установки сервера Percona версии 8.0
+      - name: set up the repository for the Percona Server for MySQL 8.0 version
+        command: percona-release setup ps80
+#Конфигурирование параметров установки сервера Percona
+      - name: Configure debconf for version 8.0 (Use Legacy Authentication Method)
+        debconf:
+          name: 'percona-server-server'
+          question: 'percona-server-server/default-auth-override'
+          value: 'Use Legacy Authentication Method (Retain MySQL 5.x Compatibility)'
+          vtype: select
+#Установка сервера Percona
+      - name: Install percona-server package
+        apt:
+          name: percona-server-server
+          state: latest
+#Установка пароля пользователю root на сервере Percona
+      - name: Setup root password
+        community.mysql.mysql_user:
+          name: root
+          password: percona
+#Настройка сервера source
+  - name: Source setup
+    hosts: source
+    become: true
+    tasks:
+#Копирование дампа базы данных bet
+      - name: Copy DB dump
+        copy:
+          src: bet.dmp
+          dest: /home/vagrant/bet.dmp
+#Копирование конфигурационного файла сервера Percona
+      - name: Copy config MySQL
+        template:
+          src: source.cnf
+          dest: /etc/alternatives/my.cnf
+#Создание пустой БД bet
+      - name: Create bet DB
+        community.mysql.mysql_db:
+          name: bet
+          state: present
+          login_user: root
+          login_password: percona
+#Восстановление базы данных bet из дампа
+      - name: Restore database
+        community.mysql.mysql_db:
+          name: bet
+          state: import
+          target: /home/vagrant/bet.dmp
+          login_user: root
+          login_password: percona
+#Создание на сервере Percona пользователя для репликации
+      - name: Create replication user
+        community.mysql.mysql_user:
+          name: repl
+          password: replica
+          host: 192.168.11.%
+          state: present
+          priv: '*.*:REPLICATION SLAVE'
+          login_user: root
+          login_password: percona
+#Перезапуск сервера Percona
+      - name: Restart mysql server
+        service:
+          name: mysql
+          state: restarted
+#Создание дампа сервера с пропуском таблиц из БД bet
+      - name: Make a dump
+        community.mysql.mysql_db:
+          state: dump
+          name: all
+          target: /home/vagrant/source.sql
+          master_data: 1
+          ignore_tables: 
+            - bet.events_on_demand
+            - bet.v_same_event
+          login_user: root
+          login_password: percona
+#Копирование дампа сервера на локальный хост
+      - name: Copy bd backup
+        fetch:
+          src: /home/vagrant/source.sql
+          dest: ./files/
+          flat: yes
+#Настройка сервера replica
+  - name: Replica setup
+    hosts: replica
+    become: true
+    tasks:
+#Копирование дампа сервера с локального хоста
+      - name: Copy bd archive
+        copy:
+          src: source.sql
+          dest: /home/vagrant/source.sql
+#Восстановление сервера из дампа
+      - name: Restore bd
+        community.mysql.mysql_db:
+          name: all
+          state: import
+          target: /home/vagrant/source.sql
+          login_user: root
+          login_password: percona
+#Копирование конфигурационного файла сервера Percona
+      - name: Copy config MySQL
+        template:
+          src: replica.cnf
+          dest: /etc/alternatives/my.cnf
+#Перезапуск сервера Percona
+      - name: Restart mysql server
+        service:
+          name: mysql
+          state: restarted
+#Активация репликации
+      - name: Enable replica
+        community.mysql.mysql_replication:
+          mode: changeprimary
+          primary_host: 192.168.11.150
+          primary_port: 3306
+          primary_user: repl
+          primary_password: replica
+          primary_auto_position: true
+          login_user: root
+          login_password: percona
+#Запуск репликации
+      - name: Start replica
+        community.mysql.mysql_replication:
+          mode: startreplica
+          login_user: root
+          login_password: percona
