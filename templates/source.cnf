@@ -1,0 +1,35 @@
+#
+# The Percona Server 8.0 configuration file.
+#
+# For explanations see
+# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
+#
+#
+# * IMPORTANT: Additional settings that can override those from this file!
+#   The files must end with '.cnf', otherwise they'll be ignored.
+#
+
+!includedir /etc/mysql/conf.d/
+!includedir /etc/mysql/mysql.conf.d/
+
+[mysqld]
+# Compatibility
+default-authentication-plugin = mysql_native_password
+
+# Replication
+server_id = 1 # must be distinct on all nodes in the cluster
+binlog_format = ROW
+log_bin = binlog
+log_slave_updates = 1
+gtid_mode = ON
+enforce_gtid_consistency = 1
+binlog_expire_logs_seconds = 604800 # 7 days
+sync_binlog = 1
+report_host = 192.168.11.150 # IP address of this host
+read_only = OFF # Set OFF on slave
+super_read_only = OFF # Set OFF on slave
+
+# Replication safety
+master_info_repository = TABLE
+relay_log_info_repository = TABLE
+relay_log_recovery = ON
