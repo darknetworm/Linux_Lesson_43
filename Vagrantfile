@@ -7,7 +7,7 @@ MACHINES = {
         :vm_name => "source",
         :net => [
           {ip: '192.168.11.150', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "mysql-net"},
-          {ip: '192.168.56.10', adapter: 8},
+          {ip: '192.168.56.10', adapter: 81},
         ]
   },
   :replica => {
