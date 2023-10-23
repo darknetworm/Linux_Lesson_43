@@ -17,10 +17,10 @@
 После старта виртуальных машин, заходим в систему управления базами данных MySQL на основном серевере и сервере репликации.  
 
 На основном (source) сервере проверяем включение глобальных транзакций (gtid-mode), идентификатор сервера (1), наличие всех таблиц, восстановленных из дампа тестовой БД и наличие пользователя с делегированными правами для репликации данных.  
-![source_1](https://github.com/darknetworm/Linux_Lesson_43/assets/82410807/3ddfacb4-e5e2-4e9f-95b7-aed753c1a744)
+![source_1](https://github.com/darknetworm/Linux_Lesson_43/assets/82410807/3ddfacb4-e5e2-4e9f-95b7-aed753c1a744)  
 На сервере репликации (replica) проверяем включение глобальных транзакций (gtid-mode), идентификатор сервера (2), наличие только заданных реплицируемых таблиц, и статус системы репликации.  
-![replica_1](https://github.com/darknetworm/Linux_Lesson_43/assets/82410807/33430408-8925-4b9f-90e4-04069bf0f19b)
+![replica_1](https://github.com/darknetworm/Linux_Lesson_43/assets/82410807/33430408-8925-4b9f-90e4-04069bf0f19b)  
 На основном сервере проверяем записи в таблице bookmaker тестовой БД bet, затем добавляем новую запись 1xbet в таблицу и вновь проверяем ее на внесенные изменения.   
-![source](https://github.com/darknetworm/Linux_Lesson_43/assets/82410807/60ad77e2-8e3f-425c-a053-76dc7bc82884)
+![source](https://github.com/darknetworm/Linux_Lesson_43/assets/82410807/60ad77e2-8e3f-425c-a053-76dc7bc82884)  
 На сервере репликации, проверяем записи в таблице bookmaker до и после внесения изменений на основном сервере, а также наличие записей бинарных логов.   
 ![replica](https://github.com/darknetworm/Linux_Lesson_43/assets/82410807/52ad499e-9398-4173-9125-1c995df38962)
